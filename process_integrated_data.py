@@ -106,6 +106,18 @@ for ticker in tickers:
     # ---------------------------- NORMALISING THE DATA -------------------------------
     # see future blog on normalisation (maxkendall.com)
 
+    # TODO
+
+
+
+    # turning datetime value into numeric values for ease of analysis (e.g. correlation matrices)
+
+    df['Year'] =  df['Date'].dt.year
+    df['Month'] = df['Date'].dt.month
+    df['Day'] = df['Date'].dt.day
+    df['day_of_week'] = df['Date'].dt.dayofweek
+    df['quarter'] = df['Date'].dt.quarter
+    df = df.drop('Date', axis='columns')
    
 
     df.to_csv(f'clean featured ticker data/{ticker}_clean_data.csv')
