@@ -31,6 +31,22 @@ def time_series_split(df, train_ratio=0.8, val_ratio=0.1, test_ratio=0.1):
 # Assuming 'df' is your preprocessed DataFrame with a DatetimeIndex
 train_data, val_data, test_data = time_series_split(pd.read_csv('clean featured ticker data/TSLA_clean_data.csv'))
 
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+def plot_correlation_matrix(X):
+    plt.figure(figsize=(20, 16))
+    corr = X.corr()
+    sns.heatmap(corr, annot=False, cmap='coolwarm', linewidths=0.5)
+    plt.title('Feature Correlation Matrix')
+    plt.show()
+
+    # Print highly correlated feature pairs
+    print("Highly correlated feature pairs:")
+    for i in range(len(corr.columns)):
+        for j in range(i):
+            if abs(corr.iloc[i, j]) > 0.8:
+                print(f"{corr.columns[i]} - {corr.columns[j]}: {corr.iloc[i, j]:.2f}")
 
 
 from sklearn.metrics import mean_squared_error, mean_absolute_error
@@ -185,6 +201,36 @@ print(results)
 # }).sort_values('importance', ascending=False)
 # print(feature_importance)
 
+from sklearn.linear_model import Ridge, Lasso
+from sklearn.model_selection import GridSearchCV
+
+def train_regularized_model(X_train, y_train, X_val, y_val, model_type='ridge'):
+    if model_type == 'ridge':
+        model = Ridge()
+        param_grid = {'alpha': [0.1, 1, 10, 100]}
+    elif model_type == 'lasso':
+        model = Lasso()
+        param_grid = {'alpha': [0.1, 1, 10, 100]}
+    else:
+        raise ValueError("model_type must be 'ridge' or 'lasso'")
+
+    grid_search = GridSearchCV(model, param_grid, cv=5, scoring='neg_mean_squared_error')
+    grid_search.fit(X_train, y_train)
+
+    best_model = grid_search.best_estimator_
+    y_pred_val = best_model.predict(X_val)
+    mse = mean_squared_error(y_val, y_pred_val)
+    r2 = r2_score(y_val, y_pred_val)
+
+    print(f"Best {model_type} alpha: {grid_search.best_params_['alpha']}")
+    print(f"Validation MSE: {mse}")
+    print(f"Validation R2: {r2}")
+
+    return best_model
+
+ridge_model = train_regularized_model(X_train, y_train, X_val, y_val, 'ridge')
+lasso_model = train_regularized_model(X_train, y_train, X_val, y_val, 'lasso')
+
 
 def check_data_consistency(train_df, val_df, test_df, target_column='Close'):
     print("Date ranges:")
@@ -199,3 +245,9 @@ def check_data_consistency(train_df, val_df, test_df, target_column='Close'):
    
 train_data, val_data, test_data = time_series_split(pd.read_csv('clean featured ticker data/TSLA_clean_data.csv'))
 check_data_consistency(train_data, val_data, test_data)
+
+
+
+
+
+
