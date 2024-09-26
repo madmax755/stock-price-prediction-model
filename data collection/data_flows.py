@@ -9,14 +9,26 @@ from fetch_bond_data import fetch_treasury_yield_data
 from fetch_stock_data import fetch_data_from_all_sources
 from fetch_economic_data import fetch_economic_data
 
-def fetch_stock_data(ticker: str, start_date: str, end_date: str) -> Dict[str, pd.DataFrame]:
+def fetch_stock_data_from_API(ticker: str, start_date: str, end_date: str) -> Dict[str, pd.DataFrame]:
     return fetch_data_from_all_sources(ticker, start_date, end_date)
 
-def fetch_bond_data(start_date: str, end_date: str):
+def fetch_bond_data_from_API(start_date: str, end_date: str):
     return fetch_treasury_yield_data(start_date, end_date)
 
-def fetch_economic_data(start_date: str, end_data: str):
+def fetch_economic_data_from_API(start_date: str, end_data: str):
     return fetch_economic_data(start_date, end_data)
+
+def merge_data(dataframes: list[pd.DataFrame]) -> pd.DataFrame:
+    # Ensure all dataframes have DatetimeIndex
+    for index, df in enumerate(dataframes):
+        dataframes[index] = df.set_index(pd.to_datetime(df.index).date)
+        dataframes[index].index.name = 'Date'
+
+    # Merge all dataframes
+    merged_data = pd.concat(dataframes, axis='columns')
+
+    return merged_data
+
 
 def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
     # Handle missing values, if any
@@ -90,9 +102,11 @@ if __name__ == "__main__":
     start_date = "2020-01-01"
     end_date = "2023-06-01"
 
-    stock_data = fetch_stock_data("AAPL", start_date, end_date)['yahoo']
-    bond_data = fetch_bond_data(start_date, end_date)
-    economic_data = fetch_economic_data(start_date, end_date)
+    stock_data = fetch_stock_data_from_API("AAPL", start_date, end_date)['yahoo']
+    bond_data = fetch_bond_data_from_API(start_date, end_date)
+    economic_data = fetch_economic_data_from_API(start_date, end_date)
+
+    print(merge_data([stock_data, bond_data, economic_data]).head(3))
 
     data_with_indicators = compute_indicators(stock_data)
     preprocessed_data = preprocess_data(data_with_indicators)
