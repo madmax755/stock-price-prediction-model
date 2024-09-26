@@ -5,9 +5,9 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 import numpy as np
 from typing import Tuple, Dict
-from get_bond_data import fetch_treasury_yield_data
-from get_stock_data import fetch_data_from_all_sources
-
+from fetch_bond_data import fetch_treasury_yield_data
+from fetch_stock_data import fetch_data_from_all_sources
+from fetch_economic_data import fetch_economic_data
 
 def fetch_stock_data(ticker: str, start_date: str, end_date: str) -> Dict[str, pd.DataFrame]:
     return fetch_data_from_all_sources(ticker, start_date, end_date)
@@ -15,6 +15,8 @@ def fetch_stock_data(ticker: str, start_date: str, end_date: str) -> Dict[str, p
 def fetch_bond_data(start_date: str, end_date: str):
     return fetch_treasury_yield_data(start_date, end_date)
 
+def fetch_economic_data(start_date: str, end_data: str):
+    return fetch_economic_data(start_date, end_data)
 
 def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
     # Handle missing values, if any
@@ -85,8 +87,14 @@ def combine_features(df: pd.DataFrame) -> pd.DataFrame:
 
     
 if __name__ == "__main__":
-    data = fetch_stock_data("AAPL", "2020-01-01", "2023-06-01")['yahoo']
-    data_with_indicators = compute_indicators(data)
+    start_date = "2020-01-01"
+    end_date = "2023-06-01"
+
+    stock_data = fetch_stock_data("AAPL", start_date, end_date)['yahoo']
+    bond_data = fetch_bond_data(start_date, end_date)
+    economic_data = fetch_economic_data(start_date, end_date)
+
+    data_with_indicators = compute_indicators(stock_data)
     preprocessed_data = preprocess_data(data_with_indicators)
     final_features = combine_features(preprocessed_data)
     # X_train, X_test, y_train, y_test = split_data(final_features)
