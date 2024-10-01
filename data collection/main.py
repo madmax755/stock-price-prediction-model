@@ -19,7 +19,7 @@ def fetch_economic_data_from_API(start_date: str, end_data: str):
     return fetch_economic_data(start_date, end_data)
 
 def merge_data(dataframes: list[pd.DataFrame]) -> pd.DataFrame:
-    # Ensure all dataframes have DatetimeIndex
+    # Ensure all dataframes have only a date as index
     for index, df in enumerate(dataframes):
         dataframes[index] = df.set_index(pd.to_datetime(df.index).date)
         dataframes[index].index.name = 'Date'
@@ -31,8 +31,12 @@ def merge_data(dataframes: list[pd.DataFrame]) -> pd.DataFrame:
 
 
 def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
-    # Handle missing values, if any
-    df = df.dropna()
+
+    # fill selected cols
+
+    columns_to_fill = df.columns
+    df = df[columns_to_fill].ffill()
+
     
     # to avoid SettingWithCopyWarning
     df_copy = df.copy()
@@ -40,12 +44,16 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
     # Compute returns
     df_copy['Returns'] = df['Close'].pct_change()
     
+    # df.dropna()
+
     return df_copy
 
 
 
 def compute_indicators(df: pd.DataFrame) -> pd.DataFrame:
     # Simple Moving Average
+    df['SMA_5'] = df['Close'].rolling(window=5).mean()
+    df['SMA_10'] = df['Close'].rolling(window=10).mean()
     df['SMA_20'] = df['Close'].rolling(window=20).mean()
     
     # Relative Strength Index
@@ -69,9 +77,7 @@ def compute_indicators(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def combine_features(df: pd.DataFrame) -> pd.DataFrame:
-    # Select features for your model
-    features = ['Close', 'Volume', 'SMA_20', 'RSI', 'MACD', 'Signal_Line', 'BB_Upper', 'BB_Lower', 'Returns']
+def select_features(df: pd.DataFrame, features: list[str]) -> pd.DataFrame:
     return df[features].dropna()
 
 
@@ -95,22 +101,24 @@ def combine_features(df: pd.DataFrame) -> pd.DataFrame:
 # def generate_report(rmse: float) -> str:
 #     return f"Model RMSE: {rmse}"
 
-
-
     
 if __name__ == "__main__":
     start_date = "2020-01-01"
     end_date = "2023-06-01"
+    use_stored_data = True
+    ticker = "AAPL"
 
-    stock_data = fetch_stock_data_from_API("AAPL", start_date, end_date)['yahoo']
-    bond_data = fetch_bond_data_from_API(start_date, end_date)
-    economic_data = fetch_economic_data_from_API(start_date, end_date)
-
-    print(merge_data([stock_data, bond_data, economic_data]).head(3))
-
-    data_with_indicators = compute_indicators(stock_data)
-    preprocessed_data = preprocess_data(data_with_indicators)
-    final_features = combine_features(preprocessed_data)
+    if not use_stored_data:
+        stock_data = fetch_stock_data_from_API(ticker, start_date, end_date)['yahoo']
+        economic_data = fetch_economic_data_from_API(start_date, end_date)
+        bond_data = fetch_bond_data_from_API(start_date, end_date)
+        merged_data = merge_data([stock_data, economic_data, bond_data])
+        data_with_indicators = compute_indicators(merged_data)
+        preprocessed_data = preprocess_data(data_with_indicators)
+    else:
+        preprocessed_data = pd.read_csv(f'data/{ticker}_preprocessed_data.csv')
+    
+    final_features = select_features(preprocessed_data, ['Close', 'Volume', 'SMA_20', 'RSI', 'MACD', 'Signal_Line', 'BB_Upper', 'BB_Lower', 'Returns'])
     # X_train, X_test, y_train, y_test = split_data(final_features)
     # model = train_model(X_train, y_train)
     # rmse = evaluate_model(model, X_test, y_test)
