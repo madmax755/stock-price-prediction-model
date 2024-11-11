@@ -105,7 +105,7 @@ def select_features(df: pd.DataFrame, features: list[str]) -> pd.DataFrame:
 if __name__ == "__main__":
     start_date = "2020-01-01"
     end_date = "2023-06-01"
-    use_stored_data = True
+    use_stored_data = False
     ticker = "AAPL"
 
     if not use_stored_data:
